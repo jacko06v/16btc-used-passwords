@@ -169,6 +169,16 @@ function downloadTxt() {
   URL.revokeObjectURL(url);
 }
 
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function buildPublicSubmissionBody(lines, part = 1, total = 1) {
   return [
     "### Tested passwords",
@@ -273,6 +283,34 @@ async function openCurrentSubmissionIssue() {
   setStatus("Issue opened", "ok");
 }
 
+function openAttachmentSubmissionIssue(uniqueLines) {
+  const config = repoConfig;
+  const filename = `tested-passwords-submission-${Date.now()}.txt`;
+  const text = uniqueLines.join("\n") + "\n";
+  downloadTextFile(filename, text);
+
+  const title = `Password denylist file submission (${new Date().toISOString()})`;
+  const body = [
+    "### Tested passwords file",
+    "",
+    `Please attach the downloaded file named \`${filename}\` to this issue before submitting.`,
+    "",
+    "Instructions:",
+    "1. Drag the downloaded TXT file into this issue body.",
+    "2. Wait until GitHub finishes uploading it.",
+    "3. Submit the issue.",
+    "",
+    "The GitHub Action will download the attachment, deduplicate it, update `tested-passwords.txt`, and close this issue.",
+  ].join("\n");
+
+  const issueUrl = new URL(`https://github.com/${config.owner}/${config.repo}/issues/new`);
+  issueUrl.searchParams.set("title", title);
+  issueUrl.searchParams.set("body", body);
+  issueUrl.searchParams.set("labels", "password-submission");
+  window.open(issueUrl.toString(), "_blank", "noopener");
+  setStatus("Attach TXT file", "warn");
+}
+
 async function submitPublicly() {
   const config = repoConfig;
   assertRemoteConfig(config);
@@ -280,6 +318,13 @@ async function submitPublicly() {
   const lines = parseLines(els.passwordInput.value);
   if (!lines.length) {
     setStatus("Nothing to submit", "warn");
+    return;
+  }
+
+  const uniqueLines = Array.from(new Set(lines));
+  const rawTextLength = uniqueLines.join("\n").length;
+  if (uniqueLines.length > 2500 || rawTextLength > 60000) {
+    openAttachmentSubmissionIssue(uniqueLines);
     return;
   }
 
