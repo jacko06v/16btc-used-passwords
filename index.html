@@ -16,36 +16,12 @@
         <div class="status" id="status">Offline</div>
       </section>
 
-      <section class="panel grid">
-        <label>
-          Owner
-          <input id="owner" autocomplete="off" value="jacko06v" placeholder="github-user-or-org">
-        </label>
-        <label>
-          Repository
-          <input id="repo" autocomplete="off" value="16btc-used-passwords" placeholder="wallet-password-denylist">
-        </label>
-        <label>
-          Branch
-          <input id="branch" autocomplete="off" value="main">
-        </label>
-        <label>
-          Data file
-          <input id="path" autocomplete="off" value="tested-passwords.txt">
-        </label>
-      </section>
-
       <section class="panel">
-        <label>
-          Fine-grained GitHub token
-          <input id="token" type="password" autocomplete="off" placeholder="Only stored in this browser">
-        </label>
         <div class="actions">
-          <button id="saveConfig" type="button">Save Config</button>
           <button id="loadRemote" type="button">Load Remote List</button>
           <button id="clearLocal" type="button">Clear Local Cache</button>
         </div>
-        <p class="hint">Use a private repository. Do not publish sensitive candidate lists in a public repo.</p>
+        <p class="hint">Public submissions are processed through GitHub Issues. No token is required.</p>
       </section>
 
       <section class="metrics">
@@ -71,7 +47,6 @@
         <div class="actions">
           <button id="addLocal" type="button">Add To Local List</button>
           <button id="submitPublic" type="button">Submit Publicly</button>
-          <button id="saveRemote" type="button">Save To GitHub</button>
           <button id="downloadTxt" type="button">Download TXT</button>
         </div>
         <p class="hint">Public submissions open a GitHub issue. No token is needed, but a GitHub account is required.</p>

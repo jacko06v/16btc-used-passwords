@@ -169,7 +169,7 @@ button:hover {
 }
 
 button.primary,
-#saveRemote,
+#submitPublic,
 #loadRemote {
   border-color: var(--accent);
   background: var(--accent);
@@ -177,7 +177,7 @@ button.primary,
 }
 
 button.primary:hover,
-#saveRemote:hover,
+#submitPublic:hover,
 #loadRemote:hover {
   background: var(--accent-dark);
 }

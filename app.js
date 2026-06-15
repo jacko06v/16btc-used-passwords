@@ -1,5 +1,10 @@
-const configKey = "wallet-denylist-config";
 const localListKey = "wallet-denylist-local";
+const repoConfig = {
+  owner: "jacko06v",
+  repo: "16btc-used-passwords",
+  branch: "main",
+  path: "tested-passwords.txt",
+};
 
 const state = {
   passwords: new Set(),
@@ -9,11 +14,6 @@ const state = {
 };
 
 const els = {
-  owner: document.querySelector("#owner"),
-  repo: document.querySelector("#repo"),
-  branch: document.querySelector("#branch"),
-  path: document.querySelector("#path"),
-  token: document.querySelector("#token"),
   status: document.querySelector("#status"),
   totalCount: document.querySelector("#totalCount"),
   pendingCount: document.querySelector("#pendingCount"),
@@ -22,12 +22,10 @@ const els = {
   checkInput: document.querySelector("#checkInput"),
   checkResult: document.querySelector("#checkResult"),
   preview: document.querySelector("#preview"),
-  saveConfig: document.querySelector("#saveConfig"),
   loadRemote: document.querySelector("#loadRemote"),
   clearLocal: document.querySelector("#clearLocal"),
   addLocal: document.querySelector("#addLocal"),
   submitPublic: document.querySelector("#submitPublic"),
-  saveRemote: document.querySelector("#saveRemote"),
   downloadTxt: document.querySelector("#downloadTxt"),
   copyAll: document.querySelector("#copyAll"),
 };
@@ -35,37 +33,6 @@ const els = {
 function setStatus(message, type = "") {
   els.status.textContent = message;
   els.status.className = `status ${type}`.trim();
-}
-
-function getConfig() {
-  return {
-    owner: els.owner.value.trim(),
-    repo: els.repo.value.trim(),
-    branch: els.branch.value.trim() || "main",
-    path: els.path.value.trim() || "tested-passwords.txt",
-    token: els.token.value.trim(),
-  };
-}
-
-function saveConfig() {
-  localStorage.setItem(configKey, JSON.stringify(getConfig()));
-  setStatus("Config saved", "ok");
-}
-
-function loadConfig() {
-  const raw = localStorage.getItem(configKey);
-  if (!raw) return;
-
-  try {
-    const config = JSON.parse(raw);
-    els.owner.value = config.owner || "";
-    els.repo.value = config.repo || "";
-    els.branch.value = config.branch || "main";
-    els.path.value = config.path || "tested-passwords.txt";
-    els.token.value = config.token || "";
-  } catch {
-    localStorage.removeItem(configKey);
-  }
 }
 
 function parseLines(text) {
@@ -126,27 +93,17 @@ function apiUrl(config) {
   return `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${encodeURIComponent(config.branch)}`;
 }
 
-function assertRemoteConfig(config, needsToken = false) {
+function assertRemoteConfig(config) {
   if (!config.owner || !config.repo || !config.path) {
     throw new Error("Owner, repository, and data file are required.");
   }
-
-  if (needsToken && !config.token) {
-    throw new Error("A GitHub token is required to save changes.");
-  }
 }
 
-function authHeaders(config) {
-  const headers = {
+function githubHeaders() {
+  return {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-
-  if (config.token) {
-    headers.Authorization = `Bearer ${config.token}`;
-  }
-
-  return headers;
 }
 
 function decodeBase64Content(content) {
@@ -163,12 +120,12 @@ function encodeBase64Content(text) {
 }
 
 async function loadRemoteList() {
-  const config = getConfig();
+  const config = repoConfig;
   assertRemoteConfig(config);
   setStatus("Loading", "warn");
 
   const response = await fetch(apiUrl(config), {
-    headers: authHeaders(config),
+    headers: githubHeaders(),
   });
 
   if (response.status === 404) {
@@ -190,45 +147,6 @@ async function loadRemoteList() {
   saveLocalList();
   render();
   setStatus("Remote loaded", "ok");
-}
-
-async function saveRemoteList(retry = true) {
-  const config = getConfig();
-  assertRemoteConfig(config, true);
-  setStatus("Saving", "warn");
-
-  const body = {
-    message: `Update tested passwords (${new Date().toISOString()})`,
-    content: encodeBase64Content(serializeList()),
-    branch: config.branch,
-  };
-
-  if (state.remoteSha) body.sha = state.remoteSha;
-
-  const response = await fetch(apiUrl(config).replace(/\?ref=.*/, ""), {
-    method: "PUT",
-    headers: {
-      ...authHeaders(config),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (response.status === 409 && retry) {
-    await loadRemoteList();
-    return saveRemoteList(false);
-  }
-
-  if (!response.ok) {
-    throw new Error(`GitHub save failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  state.remoteSha = data.content?.sha || null;
-  state.pending.clear();
-  saveLocalList();
-  render();
-  setStatus("Saved", "ok");
 }
 
 function downloadTxt() {
@@ -255,7 +173,7 @@ function buildPublicSubmissionBody(lines) {
 }
 
 function submitPublicly() {
-  const config = getConfig();
+  const config = repoConfig;
   assertRemoteConfig(config);
 
   const lines = parseLines(els.passwordInput.value);
@@ -304,11 +222,8 @@ function checkCandidate() {
   }
 }
 
-els.saveConfig.addEventListener("click", saveConfig);
-
 els.loadRemote.addEventListener("click", async () => {
   try {
-    saveConfig();
     await loadRemoteList();
   } catch (error) {
     setStatus(error.message, "error");
@@ -340,18 +255,9 @@ els.submitPublic.addEventListener("click", () => {
   }
 });
 
-els.saveRemote.addEventListener("click", async () => {
-  try {
-    await saveRemoteList();
-  } catch (error) {
-    setStatus(error.message, "error");
-  }
-});
-
 els.downloadTxt.addEventListener("click", downloadTxt);
 els.copyAll.addEventListener("click", copyAll);
 els.checkInput.addEventListener("input", checkCandidate);
 
-loadConfig();
 loadLocalList();
 render();
