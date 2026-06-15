@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tested Passwords</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>Tested Passwords</h1>
+          <p>Shared denylist for already-tested wallet password candidates.</p>
+        </div>
+        <div class="status" id="status">Offline</div>
+      </section>
+
+      <section class="panel grid">
+        <label>
+          Owner
+          <input id="owner" autocomplete="off" placeholder="github-user-or-org">
+        </label>
+        <label>
+          Repository
+          <input id="repo" autocomplete="off" placeholder="wallet-password-denylist">
+        </label>
+        <label>
+          Branch
+          <input id="branch" autocomplete="off" value="main">
+        </label>
+        <label>
+          Data file
+          <input id="path" autocomplete="off" value="tested-passwords.txt">
+        </label>
+      </section>
+
+      <section class="panel">
+        <label>
+          Fine-grained GitHub token
+          <input id="token" type="password" autocomplete="off" placeholder="Only stored in this browser">
+        </label>
+        <div class="actions">
+          <button id="saveConfig" type="button">Save Config</button>
+          <button id="loadRemote" type="button">Load Remote List</button>
+          <button id="clearLocal" type="button">Clear Local Cache</button>
+        </div>
+        <p class="hint">Use a private repository. Do not publish sensitive candidate lists in a public repo.</p>
+      </section>
+
+      <section class="metrics">
+        <div>
+          <strong id="totalCount">0</strong>
+          <span>Total unique</span>
+        </div>
+        <div>
+          <strong id="pendingCount">0</strong>
+          <span>Pending save</span>
+        </div>
+        <div>
+          <strong id="duplicateCount">0</strong>
+          <span>Duplicates skipped</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <label>
+          Add tested, not working passwords
+          <textarea id="passwordInput" spellcheck="false" placeholder="One password per line"></textarea>
+        </label>
+        <div class="actions">
+          <button id="addLocal" type="button">Add To Local List</button>
+          <button id="saveRemote" type="button">Save To GitHub</button>
+          <button id="downloadTxt" type="button">Download TXT</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <label>
+          Check one candidate
+          <input id="checkInput" autocomplete="off" placeholder="Paste exact candidate">
+        </label>
+        <div class="checkResult" id="checkResult">No candidate checked.</div>
+      </section>
+
+      <section class="panel">
+        <div class="listHead">
+          <h2>Recent Additions</h2>
+          <button id="copyAll" type="button">Copy TXT</button>
+        </div>
+        <pre id="preview" aria-live="polite"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
