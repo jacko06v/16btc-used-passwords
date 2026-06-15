@@ -4,9 +4,9 @@ Single-page GitHub Pages app for maintaining a shared denylist of wallet passwor
 
 ## Important Security Note
 
-Use a private GitHub repository. A plaintext list of tested password candidates can reveal strategy, personal data, and search space assumptions.
+A plaintext list of tested password candidates can reveal strategy, personal data, and search space assumptions. If the repository is public, assume everyone can read the list.
 
-The app stores the GitHub token only in the browser's `localStorage`. Every collaborator should use their own fine-grained token with access limited to this single repository.
+The app stores the GitHub token only in the browser's `localStorage`. Every collaborator who needs to save should use their own fine-grained token with access limited to this single repository.
 
 ## Files
 
@@ -24,6 +24,8 @@ The app stores the GitHub token only in the browser's `localStorage`. Every coll
 5. Select `main` and `/root`.
 
 ## Token Setup
+
+Reading from a public repository works without a token. Saving changes requires a token.
 
 Create a fine-grained GitHub token:
 

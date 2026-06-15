@@ -125,18 +125,27 @@ function apiUrl(config) {
   return `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${encodeURIComponent(config.branch)}`;
 }
 
-function assertRemoteConfig(config) {
-  if (!config.owner || !config.repo || !config.path || !config.token) {
-    throw new Error("Owner, repository, data file, and token are required.");
+function assertRemoteConfig(config, needsToken = false) {
+  if (!config.owner || !config.repo || !config.path) {
+    throw new Error("Owner, repository, and data file are required.");
+  }
+
+  if (needsToken && !config.token) {
+    throw new Error("A GitHub token is required to save changes.");
   }
 }
 
 function authHeaders(config) {
-  return {
+  const headers = {
     Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${config.token}`,
     "X-GitHub-Api-Version": "2022-11-28",
   };
+
+  if (config.token) {
+    headers.Authorization = `Bearer ${config.token}`;
+  }
+
+  return headers;
 }
 
 function decodeBase64Content(content) {
@@ -184,7 +193,7 @@ async function loadRemoteList() {
 
 async function saveRemoteList(retry = true) {
   const config = getConfig();
-  assertRemoteConfig(config);
+  assertRemoteConfig(config, true);
   setStatus("Saving", "warn");
 
   const body = {
