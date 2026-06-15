@@ -10,7 +10,6 @@ const state = {
   passwords: new Set(),
   pending: new Set(),
   duplicates: 0,
-  remoteSha: null,
   submissionChunks: [],
   submissionIndex: 0,
 };
@@ -73,11 +72,17 @@ function render() {
   els.pendingCount.textContent = state.pending.size.toLocaleString();
   els.duplicateCount.textContent = state.duplicates.toLocaleString();
 
-  const recent = Array.from(state.passwords).slice(-80).join("\n");
+  const recentItems = [];
+  for (const password of state.passwords) {
+    recentItems.push(password);
+    if (recentItems.length > 80) recentItems.shift();
+  }
+
+  const recent = recentItems.join("\n");
   els.preview.textContent = recent || "No passwords loaded yet.";
 }
 
-function addPasswords(lines, markPending = true) {
+function addPasswords(lines, markPending = true, persist = true) {
   let added = 0;
   let dupes = 0;
 
@@ -93,14 +98,14 @@ function addPasswords(lines, markPending = true) {
   }
 
   state.duplicates += dupes;
-  saveLocalList();
+  if (persist) saveLocalList();
   render();
   return { added, dupes };
 }
 
-function apiUrl(config) {
+function rawFileUrl(config) {
   const path = encodeURIComponent(config.path).replace(/%2F/g, "/");
-  return `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${encodeURIComponent(config.branch)}`;
+  return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${path}?v=${Date.now()}`;
 }
 
 function assertRemoteConfig(config) {
@@ -109,37 +114,14 @@ function assertRemoteConfig(config) {
   }
 }
 
-function githubHeaders() {
-  return {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-}
-
-function decodeBase64Content(content) {
-  const binary = atob(content.replace(/\n/g, ""));
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-function encodeBase64Content(text) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
 async function loadRemoteList() {
   const config = repoConfig;
   assertRemoteConfig(config);
   setStatus("Loading", "warn");
 
-  const response = await fetch(apiUrl(config), {
-    headers: githubHeaders(),
-  });
+  const response = await fetch(rawFileUrl(config), { cache: "no-store" });
 
   if (response.status === 404) {
-    state.remoteSha = null;
     setStatus("No remote file", "warn");
     render();
     return;
@@ -149,14 +131,11 @@ async function loadRemoteList() {
     throw new Error(`GitHub load failed: ${response.status}`);
   }
 
-  const data = await response.json();
-  state.remoteSha = data.sha;
-  const text = decodeBase64Content(data.content || "");
-  addPasswords(parseLines(text), false);
+  const text = await response.text();
+  const result = addPasswords(parseLines(text), false, false);
   state.pending.clear();
-  saveLocalList();
   render();
-  setStatus("Remote loaded", "ok");
+  setStatus(`${result.added.toLocaleString()} loaded`, "ok");
 }
 
 function downloadTxt() {
@@ -368,7 +347,6 @@ els.clearLocal.addEventListener("click", () => {
   state.passwords.clear();
   state.pending.clear();
   state.duplicates = 0;
-  state.remoteSha = null;
   localStorage.removeItem(localListKey);
   render();
   setStatus("Local cleared", "warn");
@@ -417,3 +395,4 @@ els.checkInput.addEventListener("input", checkCandidate);
 
 loadLocalList();
 render();
+loadRemoteList().catch((error) => setStatus(error.message, "error"));
