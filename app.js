@@ -58,7 +58,14 @@ function serializeList() {
 }
 
 function saveLocalList() {
-  localStorage.setItem(localListKey, serializeList());
+  try {
+    const text = serializeList();
+    if (text.length > 500000) return false;
+    localStorage.setItem(localListKey, text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function loadLocalList() {
@@ -84,7 +91,7 @@ function render() {
   els.preview.textContent = recent || "No passwords loaded yet.";
 }
 
-function addPasswords(lines, markPending = true, persist = true) {
+function addPasswords(lines, markPending = true, persist = false) {
   let added = 0;
   let dupes = 0;
 
@@ -379,7 +386,7 @@ els.clearLocal.addEventListener("click", () => {
 
 els.addLocal.addEventListener("click", () => {
   const lines = parseLines(els.passwordInput.value);
-  const result = addPasswords(lines);
+  const result = addPasswords(lines, true, false);
   els.passwordInput.value = "";
   setStatus(`${result.added} added`, result.added ? "ok" : "warn");
 });
