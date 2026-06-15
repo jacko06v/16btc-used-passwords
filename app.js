@@ -26,6 +26,7 @@ const els = {
   loadRemote: document.querySelector("#loadRemote"),
   clearLocal: document.querySelector("#clearLocal"),
   addLocal: document.querySelector("#addLocal"),
+  submitPublic: document.querySelector("#submitPublic"),
   saveRemote: document.querySelector("#saveRemote"),
   downloadTxt: document.querySelector("#downloadTxt"),
   copyAll: document.querySelector("#copyAll"),
@@ -240,6 +241,47 @@ function downloadTxt() {
   URL.revokeObjectURL(url);
 }
 
+function buildPublicSubmissionBody(lines) {
+  const unique = Array.from(new Set(lines));
+  return [
+    "### Tested passwords",
+    "",
+    "```text",
+    ...unique,
+    "```",
+    "",
+    "Submitted from the public GitHub Pages app.",
+  ].join("\n");
+}
+
+function submitPublicly() {
+  const config = getConfig();
+  assertRemoteConfig(config);
+
+  const lines = parseLines(els.passwordInput.value);
+  if (!lines.length) {
+    setStatus("Nothing to submit", "warn");
+    return;
+  }
+
+  const body = buildPublicSubmissionBody(lines);
+  const title = `Password denylist submission (${new Date().toISOString()})`;
+  const issueUrl = new URL(`https://github.com/${config.owner}/${config.repo}/issues/new`);
+  issueUrl.searchParams.set("title", title);
+  issueUrl.searchParams.set("body", body);
+  issueUrl.searchParams.set("labels", "password-submission");
+
+  if (issueUrl.toString().length > 7500) {
+    navigator.clipboard.writeText(body);
+    window.open(`https://github.com/${config.owner}/${config.repo}/issues/new?title=${encodeURIComponent(title)}`, "_blank", "noopener");
+    setStatus("Submission copied", "warn");
+    return;
+  }
+
+  window.open(issueUrl.toString(), "_blank", "noopener");
+  setStatus("Issue opened", "ok");
+}
+
 async function copyAll() {
   await navigator.clipboard.writeText(serializeList());
   setStatus("Copied", "ok");
@@ -288,6 +330,14 @@ els.addLocal.addEventListener("click", () => {
   const result = addPasswords(lines);
   els.passwordInput.value = "";
   setStatus(`${result.added} added`, result.added ? "ok" : "warn");
+});
+
+els.submitPublic.addEventListener("click", () => {
+  try {
+    submitPublicly();
+  } catch (error) {
+    setStatus(error.message, "error");
+  }
 });
 
 els.saveRemote.addEventListener("click", async () => {

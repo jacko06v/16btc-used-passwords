@@ -44,6 +44,18 @@ Create a fine-grained GitHub token:
 6. Click `Save To GitHub`.
 7. Use `Download TXT` for Hashcat `--exclude-passwordlist` or manual review.
 
+## Public Competition Mode
+
+Participants do not need a token.
+
+1. Paste tested failed passwords, one per line.
+2. Click `Submit Publicly`.
+3. GitHub opens a pre-filled issue.
+4. The participant submits the issue.
+5. GitHub Actions deduplicates the lines, updates `tested-passwords.txt`, comments with a summary, and closes the issue.
+
+This requires a GitHub account, but not a fine-grained token.
+
 ## Hashcat Exclude Example
 
 ```bash
