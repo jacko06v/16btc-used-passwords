@@ -19,6 +19,8 @@ const els = {
   pendingCount: document.querySelector("#pendingCount"),
   duplicateCount: document.querySelector("#duplicateCount"),
   passwordInput: document.querySelector("#passwordInput"),
+  submissionPanel: document.querySelector("#submissionPanel"),
+  submissionBody: document.querySelector("#submissionBody"),
   checkInput: document.querySelector("#checkInput"),
   checkResult: document.querySelector("#checkResult"),
   preview: document.querySelector("#preview"),
@@ -26,6 +28,7 @@ const els = {
   clearLocal: document.querySelector("#clearLocal"),
   addLocal: document.querySelector("#addLocal"),
   submitPublic: document.querySelector("#submitPublic"),
+  copySubmission: document.querySelector("#copySubmission"),
   downloadTxt: document.querySelector("#downloadTxt"),
   copyAll: document.querySelector("#copyAll"),
 };
@@ -172,7 +175,18 @@ function buildPublicSubmissionBody(lines) {
   ].join("\n");
 }
 
-function submitPublicly() {
+async function copySubmissionBody() {
+  const body = els.submissionBody.value;
+  if (!body) {
+    setStatus("Nothing to copy", "warn");
+    return;
+  }
+
+  await navigator.clipboard.writeText(body);
+  setStatus("Issue body copied", "ok");
+}
+
+async function submitPublicly() {
   const config = repoConfig;
   assertRemoteConfig(config);
 
@@ -183,6 +197,9 @@ function submitPublicly() {
   }
 
   const body = buildPublicSubmissionBody(lines);
+  els.submissionBody.value = body;
+  els.submissionPanel.classList.remove("hidden");
+
   const title = `Password denylist submission (${new Date().toISOString()})`;
   const issueUrl = new URL(`https://github.com/${config.owner}/${config.repo}/issues/new`);
   issueUrl.searchParams.set("title", title);
@@ -190,12 +207,13 @@ function submitPublicly() {
   issueUrl.searchParams.set("labels", "password-submission");
 
   if (issueUrl.toString().length > 7500) {
-    navigator.clipboard.writeText(body);
+    await navigator.clipboard.writeText(body);
     window.open(`https://github.com/${config.owner}/${config.repo}/issues/new?title=${encodeURIComponent(title)}`, "_blank", "noopener");
-    setStatus("Submission copied", "warn");
+    setStatus("Paste copied body", "warn");
     return;
   }
 
+  await navigator.clipboard.writeText(body);
   window.open(issueUrl.toString(), "_blank", "noopener");
   setStatus("Issue opened", "ok");
 }
@@ -253,6 +271,10 @@ els.submitPublic.addEventListener("click", () => {
   } catch (error) {
     setStatus(error.message, "error");
   }
+});
+
+els.copySubmission.addEventListener("click", () => {
+  copySubmissionBody().catch((error) => setStatus(error.message, "error"));
 });
 
 els.downloadTxt.addEventListener("click", downloadTxt);
