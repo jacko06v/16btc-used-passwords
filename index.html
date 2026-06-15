@@ -54,11 +54,16 @@
 
       <section class="panel hidden" id="submissionPanel">
         <div class="listHead">
-          <h2>Issue Body</h2>
-          <button id="copySubmission" type="button">Copy Issue Body</button>
+          <h2 id="submissionTitle">Issue Body</h2>
+          <div class="actions inline">
+            <button id="prevSubmission" type="button">Previous</button>
+            <button id="nextSubmission" type="button">Next</button>
+            <button id="openSubmission" type="button">Open Issue</button>
+            <button id="copySubmission" type="button">Copy Issue Body</button>
+          </div>
         </div>
         <textarea id="submissionBody" spellcheck="false" readonly></textarea>
-        <p class="hint">If the GitHub issue is not pre-filled, paste this text into the issue body and submit it.</p>
+        <p class="hint" id="submissionHint">If the GitHub issue is not pre-filled, paste this text into the issue body and submit it.</p>
       </section>
 
       <section class="panel">

@@ -172,6 +172,20 @@ button:hover {
   color: var(--accent-dark);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button:disabled:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.actions.inline {
+  margin-top: 0;
+}
+
 button.primary,
 #submitPublic,
 #loadRemote {

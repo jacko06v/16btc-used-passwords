@@ -11,6 +11,8 @@ const state = {
   pending: new Set(),
   duplicates: 0,
   remoteSha: null,
+  submissionChunks: [],
+  submissionIndex: 0,
 };
 
 const els = {
@@ -20,7 +22,9 @@ const els = {
   duplicateCount: document.querySelector("#duplicateCount"),
   passwordInput: document.querySelector("#passwordInput"),
   submissionPanel: document.querySelector("#submissionPanel"),
+  submissionTitle: document.querySelector("#submissionTitle"),
   submissionBody: document.querySelector("#submissionBody"),
+  submissionHint: document.querySelector("#submissionHint"),
   checkInput: document.querySelector("#checkInput"),
   checkResult: document.querySelector("#checkResult"),
   preview: document.querySelector("#preview"),
@@ -29,6 +33,9 @@ const els = {
   addLocal: document.querySelector("#addLocal"),
   submitPublic: document.querySelector("#submitPublic"),
   copySubmission: document.querySelector("#copySubmission"),
+  openSubmission: document.querySelector("#openSubmission"),
+  prevSubmission: document.querySelector("#prevSubmission"),
+  nextSubmission: document.querySelector("#nextSubmission"),
   downloadTxt: document.querySelector("#downloadTxt"),
   copyAll: document.querySelector("#copyAll"),
 };
@@ -162,21 +169,75 @@ function downloadTxt() {
   URL.revokeObjectURL(url);
 }
 
-function buildPublicSubmissionBody(lines) {
-  const unique = Array.from(new Set(lines));
+function buildPublicSubmissionBody(lines, part = 1, total = 1) {
   return [
     "### Tested passwords",
     "",
+    `Part ${part} of ${total}`,
+    "",
     "```text",
-    ...unique,
+    ...lines,
     "```",
     "",
     "Submitted from the public GitHub Pages app.",
   ].join("\n");
 }
 
+function buildSubmissionChunks(lines) {
+  const unique = Array.from(new Set(lines));
+  const maxBodyLength = 60000;
+  const chunks = [];
+  let current = [];
+
+  for (const line of unique) {
+    const next = [...current, line];
+    const draft = buildPublicSubmissionBody(next, 999, 999);
+
+    if (draft.length > maxBodyLength && current.length) {
+      chunks.push(current);
+      current = [line];
+    } else {
+      current = next;
+    }
+  }
+
+  if (current.length) chunks.push(current);
+
+  return chunks.map((chunk, index) =>
+    buildPublicSubmissionBody(chunk, index + 1, chunks.length)
+  );
+}
+
+function currentSubmissionBody() {
+  return state.submissionChunks[state.submissionIndex] || "";
+}
+
+function currentSubmissionTitle() {
+  const total = state.submissionChunks.length || 1;
+  const part = state.submissionIndex + 1;
+  if (total === 1) {
+    return `Password denylist submission (${new Date().toISOString()})`;
+  }
+  return `Password denylist submission part ${part} of ${total} (${new Date().toISOString()})`;
+}
+
+function renderSubmissionChunk() {
+  const total = state.submissionChunks.length;
+  const part = state.submissionIndex + 1;
+  const body = currentSubmissionBody();
+
+  els.submissionPanel.classList.toggle("hidden", total === 0);
+  els.submissionBody.value = body;
+  els.submissionTitle.textContent = total > 1 ? `Issue Body ${part}/${total}` : "Issue Body";
+  els.submissionHint.textContent = total > 1
+    ? `Submit every part as a separate GitHub issue. This part has ${body.length.toLocaleString()} characters.`
+    : `If the GitHub issue is not pre-filled, paste this text into the issue body and submit it.`;
+  els.prevSubmission.disabled = part <= 1;
+  els.nextSubmission.disabled = part >= total;
+}
+
 async function copySubmissionBody() {
-  const body = els.submissionBody.value;
+  const body = currentSubmissionBody();
   if (!body) {
     setStatus("Nothing to copy", "warn");
     return;
@@ -186,21 +247,15 @@ async function copySubmissionBody() {
   setStatus("Issue body copied", "ok");
 }
 
-async function submitPublicly() {
+async function openCurrentSubmissionIssue() {
   const config = repoConfig;
-  assertRemoteConfig(config);
-
-  const lines = parseLines(els.passwordInput.value);
-  if (!lines.length) {
-    setStatus("Nothing to submit", "warn");
+  const body = currentSubmissionBody();
+  if (!body) {
+    setStatus("No issue body", "warn");
     return;
   }
 
-  const body = buildPublicSubmissionBody(lines);
-  els.submissionBody.value = body;
-  els.submissionPanel.classList.remove("hidden");
-
-  const title = `Password denylist submission (${new Date().toISOString()})`;
+  const title = currentSubmissionTitle();
   const issueUrl = new URL(`https://github.com/${config.owner}/${config.repo}/issues/new`);
   issueUrl.searchParams.set("title", title);
   issueUrl.searchParams.set("body", body);
@@ -216,6 +271,22 @@ async function submitPublicly() {
   await navigator.clipboard.writeText(body);
   window.open(issueUrl.toString(), "_blank", "noopener");
   setStatus("Issue opened", "ok");
+}
+
+async function submitPublicly() {
+  const config = repoConfig;
+  assertRemoteConfig(config);
+
+  const lines = parseLines(els.passwordInput.value);
+  if (!lines.length) {
+    setStatus("Nothing to submit", "warn");
+    return;
+  }
+
+  state.submissionChunks = buildSubmissionChunks(lines);
+  state.submissionIndex = 0;
+  renderSubmissionChunk();
+  await openCurrentSubmissionIssue();
 }
 
 async function copyAll() {
@@ -275,6 +346,24 @@ els.submitPublic.addEventListener("click", () => {
 
 els.copySubmission.addEventListener("click", () => {
   copySubmissionBody().catch((error) => setStatus(error.message, "error"));
+});
+
+els.openSubmission.addEventListener("click", () => {
+  openCurrentSubmissionIssue().catch((error) => setStatus(error.message, "error"));
+});
+
+els.prevSubmission.addEventListener("click", () => {
+  if (state.submissionIndex > 0) {
+    state.submissionIndex -= 1;
+    renderSubmissionChunk();
+  }
+});
+
+els.nextSubmission.addEventListener("click", () => {
+  if (state.submissionIndex < state.submissionChunks.length - 1) {
+    state.submissionIndex += 1;
+    renderSubmissionChunk();
+  }
 });
 
 els.downloadTxt.addEventListener("click", downloadTxt);
