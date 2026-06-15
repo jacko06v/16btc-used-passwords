@@ -27,14 +27,17 @@ Public submissions are sent through GitHub Issues and processed by GitHub Action
 
 1. Click `Load Remote List`.
 2. Paste tested failed passwords, one per line.
-3. Click `Submit Publicly`.
-4. For small submissions, submit the pre-filled GitHub issue.
-5. For large submissions, attach the downloaded TXT file to the GitHub issue, then submit it.
-6. GitHub Actions deduplicates the lines, updates `tested-passwords.txt`, comments with a summary, and closes the issue.
+3. Or import a local `.txt` file with one password per line.
+4. Click `Add To Local List` or `Import TXT` to dedupe locally.
+5. Click `Submit Publicly`.
+6. For small submissions, submit the pre-filled GitHub issue.
+7. For large submissions, attach the downloaded TXT file to the GitHub issue, then submit it.
+8. GitHub Actions deduplicates the lines, updates `tested-passwords.txt`, comments with a summary, and closes the issue.
 
 You can also:
 
 - click `Add To Local List` to deduplicate locally before submitting;
+- click `Import TXT` to merge a local tested-password list;
 - use `Download TXT` for Hashcat `--exclude-passwordlist` or manual review.
 
 ## Public Competition Mode

@@ -44,12 +44,17 @@
           Add tested, not working passwords
           <textarea id="passwordInput" spellcheck="false" placeholder="One password per line"></textarea>
         </label>
+        <label class="fileLoader">
+          Import local TXT
+          <input id="txtLoader" type="file" accept=".txt,text/plain">
+        </label>
         <div class="actions">
           <button id="addLocal" type="button">Add To Local List</button>
+          <button id="importTxt" type="button">Import TXT</button>
           <button id="submitPublic" type="button">Submit Publicly</button>
           <button id="downloadTxt" type="button">Download TXT</button>
         </div>
-        <p class="hint">Small submissions open a pre-filled issue. Large submissions download a TXT file to attach to the issue.</p>
+        <p class="hint">Import a TXT with one password per line, dedupe it locally, then submit or download the merged list.</p>
       </section>
 
       <section class="panel hidden" id="submissionPanel">

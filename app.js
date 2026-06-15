@@ -20,6 +20,7 @@ const els = {
   pendingCount: document.querySelector("#pendingCount"),
   duplicateCount: document.querySelector("#duplicateCount"),
   passwordInput: document.querySelector("#passwordInput"),
+  txtLoader: document.querySelector("#txtLoader"),
   submissionPanel: document.querySelector("#submissionPanel"),
   submissionTitle: document.querySelector("#submissionTitle"),
   submissionBody: document.querySelector("#submissionBody"),
@@ -30,6 +31,7 @@ const els = {
   loadRemote: document.querySelector("#loadRemote"),
   clearLocal: document.querySelector("#clearLocal"),
   addLocal: document.querySelector("#addLocal"),
+  importTxt: document.querySelector("#importTxt"),
   submitPublic: document.querySelector("#submitPublic"),
   copySubmission: document.querySelector("#copySubmission"),
   openSubmission: document.querySelector("#openSubmission"),
@@ -103,6 +105,14 @@ function addPasswords(lines, markPending = true, persist = true) {
   return { added, dupes };
 }
 
+function submissionLines() {
+  const lines = parseLines(els.passwordInput.value);
+  for (const password of state.pending) {
+    lines.push(password);
+  }
+  return Array.from(new Set(lines));
+}
+
 function rawFileUrl(config) {
   const path = encodeURIComponent(config.path).replace(/%2F/g, "/");
   return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${path}?v=${Date.now()}`;
@@ -136,6 +146,21 @@ async function loadRemoteList() {
   state.pending.clear();
   render();
   setStatus(`${result.added.toLocaleString()} loaded`, "ok");
+}
+
+async function importTxtFile() {
+  const file = els.txtLoader.files?.[0];
+  if (!file) {
+    setStatus("Choose a TXT file", "warn");
+    return;
+  }
+
+  setStatus("Importing TXT", "warn");
+  const text = await file.text();
+  const lines = parseLines(text);
+  const result = addPasswords(lines, true, false);
+  els.txtLoader.value = "";
+  setStatus(`${result.added.toLocaleString()} imported`, result.added ? "ok" : "warn");
 }
 
 function downloadTxt() {
@@ -294,13 +319,13 @@ async function submitPublicly() {
   const config = repoConfig;
   assertRemoteConfig(config);
 
-  const lines = parseLines(els.passwordInput.value);
+  const lines = submissionLines();
   if (!lines.length) {
     setStatus("Nothing to submit", "warn");
     return;
   }
 
-  const uniqueLines = Array.from(new Set(lines));
+  const uniqueLines = lines;
   const rawTextLength = uniqueLines.join("\n").length;
   if (uniqueLines.length > 2500 || rawTextLength > 60000) {
     openAttachmentSubmissionIssue(uniqueLines);
@@ -357,6 +382,10 @@ els.addLocal.addEventListener("click", () => {
   const result = addPasswords(lines);
   els.passwordInput.value = "";
   setStatus(`${result.added} added`, result.added ? "ok" : "warn");
+});
+
+els.importTxt.addEventListener("click", () => {
+  importTxtFile().catch((error) => setStatus(error.message, "error"));
 });
 
 els.submitPublic.addEventListener("click", () => {

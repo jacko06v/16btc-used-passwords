@@ -129,6 +129,11 @@ input {
   padding: 0 10px;
 }
 
+input[type="file"] {
+  height: auto;
+  padding: 9px 10px;
+}
+
 textarea {
   min-height: 180px;
   resize: vertical;
@@ -203,6 +208,10 @@ button.primary:hover,
 .hint {
   margin-top: 10px;
   font-size: 13px;
+}
+
+.fileLoader {
+  margin-top: 12px;
 }
 
 .metrics {
